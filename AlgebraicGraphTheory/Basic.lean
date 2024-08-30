@@ -2,6 +2,7 @@ import Mathlib.Combinatorics.SimpleGraph.StronglyRegular
 import Mathlib.Combinatorics.SimpleGraph.AdjMatrix
 import Mathlib.Combinatorics.SimpleGraph.Metric
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
+import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 /-
 Copyright (c) 2024 Alena Gusakov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -19,11 +20,7 @@ universe u
 namespace SimpleGraph
 
 variable {V : Type u} [Fintype V]
-variable (G : SimpleGraph V) [DecidableRel G.Adj]
-
-theorem isSRGWith.adjMatrix_mulVec_const_apply_of_regular [NonAssocSemiring α] {a : α}
-    (h : G.IsSRGWith n k ℓ μ) {v : V} : (G.adjMatrix α *ᵥ Function.const _ a) v = k * a := by
-  simp [h.regular v]
+variable (G G₁ G₂ : SimpleGraph V) [DecidableRel G.Adj] [DecidableRel G₁.Adj] [DecidableRel G₂.Adj]
 
 def vertexTransitive := ∀ v u : V, ∃ (fᵥᵤ : G ≃g G), fᵥᵤ v = u
 
@@ -48,14 +45,43 @@ theorem subgraphAcyclic' (G' H : Subgraph G) (h : G' ≤ H) (h2 : H.IsAcyclic) :
   rw [← Walk.map_isCycle_iff_of_injective (SimpleGraph.Subgraph.inclusion.injective h)]
   apply h2 (Walk.map (SimpleGraph.Subgraph.inclusion h) p)
 
+theorem degree_eq (hG : G₁ = G₂) (v : V) :
+  G₁.degree v = G₂.degree v := by
+  rw [← card_neighborFinset_eq_degree, ← card_neighborFinset_eq_degree]
+  have h2 : G₁.neighborFinset v = G₂.neighborFinset v := by
+    ext w;
+    simp only [mem_neighborFinset]
+    rw [hG]
+  rw [h2]
+
+@[simp] lemma degree_zero : (∀ v : V, G.degree v = 0) ↔ G = ⊥ := by
+  refine ⟨fun hv => ?_, fun hG v => ?_⟩
+  · by_contra hb
+    obtain ⟨⟨v, w⟩, he⟩ := edgeSet_nonempty.2 hb
+    apply ne_of_gt ((G.degree_pos_iff_exists_adj v).2 ⟨w, he⟩) (hv v)
+  · rw [degree_eq _ _ hG]
+    apply bot_degree
+
+theorem Acyclic.existsLeaf (h : G.IsAcyclic) (hG : G ≠ ⊥) :
+  ∃ v : V, G.degree v = 1 := by
+  obtain ⟨e, he⟩ := edgeSet_nonempty.2 hG
+  by_contra hv
+  push_neg at hv
+
+  have h2 := sum_degrees_eq_twice_card_edges G
+  sorry
+
+def pruferConstructStep (G : SimpleGraph (Fin (n + 2))) (m : Fin (n + 2)) (p : List (Fin (n + 2))) :
+  SimpleGraph (Fin (n + 2)) := sorry
+
 /-- For each node set its degree to the number of times it appears in the sequence plus 1 -/
 def degreeList (p : List (Fin (n + 2))) : List ℕ :=
   (List.range (n + 2)).map fun i => List.count i p + 1
 
-lemma degreeList_length (p : List (Fin (n + 2))) (hp : List.length p = n) :
-  (degreeList p).length = n + 2 := by sorry
+/-lemma degreeList_length (p : List (Fin (n + 2))) (hp : List.length p = n) :
+  (degreeList p).length = n + 2 := by sorry-/
 
-def pruferConstructStep (G : SimpleGraph (Fin (n + 2))) (m : Fin (n + 2)) (d : List ℕ) :
+def graphConstructStep (G : SimpleGraph (Fin (n + 2))) (m : Fin (n + 2)) (d : List ℕ) :
   SimpleGraph (Fin (n + 2)) where
     Adj := fun x y => G.Adj x y ∨ ((x = d.indexOf? 1) ∧ (y = m)) ∨ ((y = d.indexOf? 1) ∧ (x = m))
     symm := fun x y hxy => _
