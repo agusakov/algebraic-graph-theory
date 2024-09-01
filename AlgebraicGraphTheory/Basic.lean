@@ -13,13 +13,11 @@ Authors: Alena Gusakov
 Collection of various experiments to do with graph definitions.
 -/
 
-open Matrix
-
 universe u
 
 namespace SimpleGraph
 
-variable {V : Type u} [Fintype V]
+variable {V : Type u} [Fintype V] [DecidableEq V]
 variable (G G₁ G₂ : SimpleGraph V) [DecidableRel G.Adj] [DecidableRel G₁.Adj] [DecidableRel G₂.Adj]
 
 def vertexTransitive := ∀ v u : V, ∃ (fᵥᵤ : G ≃g G), fᵥᵤ v = u
@@ -61,6 +59,23 @@ theorem degree_eq (hG : G₁ = G₂) (v : V) :
     apply ne_of_gt ((G.degree_pos_iff_exists_adj v).2 ⟨w, he⟩) (hv v)
   · rw [degree_eq _ _ hG]
     apply bot_degree
+
+/--
+Number of connected components finite - there's probably a cleaner way to do this
+-/
+noncomputable instance : Fintype G.ConnectedComponent := by
+  haveI := Finite.of_surjective G.connectedComponentMk (surjective_quot_mk G.Reachable)
+  apply Fintype.ofFinite G.ConnectedComponent
+
+lemma IsAcyclic.card_edgeFinset [Nontrivial V] (c : G.ConnectedComponent)
+(hG : (G.induce c.supp).IsAcyclic) :
+  Finset.card (G.induce c.supp).edgeFinset + 1 = Fintype.card c.supp := by
+  apply IsTree.card_edgeFinset ⟨?_, hG⟩
+
+  sorry
+
+/-lemma IsAcyclic.card_edgeFinset_components [Fintype V] [Nontrivial V] (hG : G.IsAcyclic) :
+    Finset.card G.edgeFinset = ∑ c : G.ConnectedComponent, Finset.card c.edgeFinset := by sorry-/
 
 theorem Acyclic.existsLeaf (h : G.IsAcyclic) (hG : G ≠ ⊥) :
   ∃ v : V, G.degree v = 1 := by
