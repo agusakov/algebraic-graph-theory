@@ -68,20 +68,6 @@ noncomputable instance : Fintype G.ConnectedComponent := by
   haveI := Finite.of_surjective G.connectedComponentMk (surjective_quot_mk G.Reachable)
   apply Fintype.ofFinite G.ConnectedComponent
 
-/-lemma adjInduceThing (c : G.ConnectedComponent) (v w : c.supp) :
-  s(v, w) ∈ (G.induce c.supp).edgeSet ↔ G.Adj v w := by sorry-/
-
-/-- The concatenation of the reverse of the first walk with the second walk. -/
-/-def reverseAux' {u v w : V} : G.Walk u v → G.Walk u w → G.Walk v w
-  | nil, q => q
-  | cons h p, q => Walk.reverseAux p (cons (G.symm h) q)-/
-
-/-def walkInConnectedComponent {c : G.ConnectedComponent} {v w : V} (hv : v ∈ c.supp) (hw : w ∈ c.supp) :
-  G.Walk v w → (G.induce c.supp).Walk ⟨v, hv⟩ ⟨w, hw⟩
-  | nil => by sorry --nil
-  | cons h p => cons (sorry) (p.walkInConnectedComponent)-/
-
-
 lemma IsAcyclic.card_edgeFinset (c : G.ConnectedComponent) [Nonempty c.supp]
 (hG : (G.induce c.supp).IsAcyclic) :
   Finset.card (SimpleGraph.induce c.supp G).edgeFinset + 1 = Fintype.card c.supp := by
@@ -93,18 +79,18 @@ lemma IsAcyclic.card_edgeFinset (c : G.ConnectedComponent) [Nonempty c.supp]
     have h3 : G.Reachable v w := by
       · rw [← SimpleGraph.ConnectedComponent.eq, (c.mem_supp_iff v).1 hv, (c.mem_supp_iff w).1 hw]
     obtain ⟨p⟩ := h3
-    induction p
-    · use @SimpleGraph.Walk.copy _ _ (⟨_, hv⟩ : c.supp) (⟨_, hw⟩ : c.supp)
+    induction p with
+    | nil => use (@SimpleGraph.Walk.copy _ _ (⟨_, hv⟩ : c.supp) (⟨_, hw⟩ : c.supp)
         (⟨_, hw⟩ : c.supp) (⟨_, hw⟩ : c.supp)
-        (Walk.nil : (induce c.supp G).Walk (⟨_, hv⟩ : c.supp) (⟨_, hv⟩ : c.supp)) (by simp only) rfl
-    · --have h2 := SimpleGraph.ConnectedComponent.connectedComponentMk_eq_of_adj (by assumption)
-      --assumption
-      --have hv2 : v✝ ∈ c.supp := by
-
-        sorry
-
-    --rw [← SimpleGraph.ConnectedComponent.eq]
-    --rw [← SimpleGraph.ConnectedComponent.supp_inj]
+        (Walk.nil : (induce c.supp G).Walk (⟨_, hv⟩ : c.supp) (⟨_, hv⟩ : c.supp)) (by simp only) rfl)
+    | cons h _ ih => {
+        have h2 := SimpleGraph.ConnectedComponent.connectedComponentMk_eq_of_adj h.symm
+        rw [(c.mem_supp_iff _).1 hv, ← c.mem_supp_iff] at h2
+        specialize ih h2 hw
+        have h4 : (induce c.supp G).Adj (⟨_, hv⟩ : c.supp) (⟨_, h2⟩ : c.supp) := by
+          simp only [comap_adj, Function.Embedding.coe_subtype]
+          apply h
+        apply Reachable.trans (Adj.reachable h4) ih }
 
 
 
