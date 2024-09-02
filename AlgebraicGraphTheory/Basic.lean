@@ -3,6 +3,7 @@ import Mathlib.Combinatorics.SimpleGraph.AdjMatrix
 import Mathlib.Combinatorics.SimpleGraph.Metric
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import Mathlib.Combinatorics.SimpleGraph.DegreeSum
+import Mathlib.Combinatorics.SimpleGraph.Walk
 /-
 Copyright (c) 2024 Alena Gusakov. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -67,12 +68,45 @@ noncomputable instance : Fintype G.ConnectedComponent := by
   haveI := Finite.of_surjective G.connectedComponentMk (surjective_quot_mk G.Reachable)
   apply Fintype.ofFinite G.ConnectedComponent
 
-lemma IsAcyclic.card_edgeFinset [Nontrivial V] (c : G.ConnectedComponent)
-(hG : (G.induce c.supp).IsAcyclic) :
-  Finset.card (G.induce c.supp).edgeFinset + 1 = Fintype.card c.supp := by
-  apply IsTree.card_edgeFinset ⟨?_, hG⟩
+/-lemma adjInduceThing (c : G.ConnectedComponent) (v w : c.supp) :
+  s(v, w) ∈ (G.induce c.supp).edgeSet ↔ G.Adj v w := by sorry-/
 
-  sorry
+/-- The concatenation of the reverse of the first walk with the second walk. -/
+/-def reverseAux' {u v w : V} : G.Walk u v → G.Walk u w → G.Walk v w
+  | nil, q => q
+  | cons h p, q => Walk.reverseAux p (cons (G.symm h) q)-/
+
+/-def walkInConnectedComponent {c : G.ConnectedComponent} {v w : V} (hv : v ∈ c.supp) (hw : w ∈ c.supp) :
+  G.Walk v w → (G.induce c.supp).Walk ⟨v, hv⟩ ⟨w, hw⟩
+  | nil => by sorry --nil
+  | cons h p => cons (sorry) (p.walkInConnectedComponent)-/
+
+
+lemma IsAcyclic.card_edgeFinset (c : G.ConnectedComponent) [Nonempty c.supp]
+(hG : (G.induce c.supp).IsAcyclic) :
+  Finset.card (SimpleGraph.induce c.supp G).edgeFinset + 1 = Fintype.card c.supp := by
+  apply IsTree.card_edgeFinset ⟨?_, hG⟩
+  apply Connected.mk ?_
+  · intros v w
+    obtain ⟨v, hv⟩ := v
+    obtain ⟨w, hw⟩ := w
+    have h3 : G.Reachable v w := by
+      · rw [← SimpleGraph.ConnectedComponent.eq, (c.mem_supp_iff v).1 hv, (c.mem_supp_iff w).1 hw]
+    obtain ⟨p⟩ := h3
+    induction p
+    · use @SimpleGraph.Walk.copy _ _ (⟨_, hv⟩ : c.supp) (⟨_, hw⟩ : c.supp)
+        (⟨_, hw⟩ : c.supp) (⟨_, hw⟩ : c.supp)
+        (Walk.nil : (induce c.supp G).Walk (⟨_, hv⟩ : c.supp) (⟨_, hv⟩ : c.supp)) (by simp only) rfl
+    · --have h2 := SimpleGraph.ConnectedComponent.connectedComponentMk_eq_of_adj (by assumption)
+      --assumption
+      --have hv2 : v✝ ∈ c.supp := by
+
+        sorry
+
+    --rw [← SimpleGraph.ConnectedComponent.eq]
+    --rw [← SimpleGraph.ConnectedComponent.supp_inj]
+
+
 
 /-lemma IsAcyclic.card_edgeFinset_components [Fintype V] [Nontrivial V] (hG : G.IsAcyclic) :
     Finset.card G.edgeFinset = ∑ c : G.ConnectedComponent, Finset.card c.edgeFinset := by sorry-/
